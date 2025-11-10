@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Hyprland Rice Installation Script for Aditya-233/rice-arch-hyprland
-# This script automates the installation on a fresh Arch Linux system (archinstall minimal)
-
 set -e  # Exit on error
 
 # Colors for output
@@ -29,13 +26,9 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if running as root
-if [ "$EUID" -eq 0 ]; then 
-    print_error "Please do not run this script as root"
-    exit 1
-fi
 
-print_info "Starting Hyprland Rice Installation for Aditya-233/rice-arch-hyprland"
+print_info "Starting Hyprland Rice Installation"
+echo ""
 
 # Update system first
 print_info "Updating system..."
@@ -67,6 +60,8 @@ echo ""
 print_info "Installing Hyprland and core Wayland dependencies..."
 sudo pacman -S --needed --noconfirm \
     hyprland \
+    hyprlock \
+    hypridle \
     xdg-desktop-portal-hyprland \
     xdg-desktop-portal-gtk \
     xorg-xwayland \
@@ -76,17 +71,23 @@ sudo pacman -S --needed --noconfirm \
 print_success "Hyprland and Wayland core installed"
 echo ""
 
-# Install display manager
-print_info "Installing SDDM display manager..."
-sudo pacman -S --needed --noconfirm sddm
-sudo systemctl enable sddm.service
-print_success "SDDM installed and enabled"
+# Install display manager (optional - user can skip)
+read -p "Install SDDM display manager? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    print_info "Installing SDDM display manager..."
+    sudo pacman -S --needed --noconfirm sddm
+    sudo systemctl enable sddm.service
+    print_success "SDDM installed and enabled"
+else
+    print_info "Skipping SDDM installation (you can start Hyprland manually with 'Hyprland' command)"
+fi
 echo ""
 
 # Install terminal emulators
-print_info "Installing terminal emulators..."
-sudo pacman -S --needed --noconfirm kitty foot alacritty
-print_success "Terminal emulators installed"
+print_info "Installing terminal emulator (kitty)..."
+sudo pacman -S --needed --noconfirm kitty
+print_success "Terminal emulator installed"
 echo ""
 
 # Install audio system (PipeWire)
@@ -107,7 +108,6 @@ print_info "Installing essential applications..."
 sudo pacman -S --needed --noconfirm \
     firefox \
     thunar \
-    thunar-archive-plugin \
     file-roller \
     networkmanager \
     network-manager-applet \
@@ -120,26 +120,25 @@ echo ""
 # Enable NetworkManager and Bluetooth
 print_info "Enabling NetworkManager and Bluetooth..."
 sudo systemctl enable NetworkManager.service
+sudo systemctl start NetworkManager.service || true
 sudo systemctl enable bluetooth.service
+sudo systemctl start bluetooth.service || true
 print_success "Services enabled"
 echo ""
 
-# Install Hyprland ecosystem packages
+# Install Hyprland ecosystem packages (all packages from your configs)
 print_info "Installing Hyprland ecosystem packages..."
 sudo pacman -S --needed --noconfirm \
     waybar \
-    wofi \
     rofi-wayland \
-    dunst \
-    hyprpaper \
-    swaybg \
+    wlogout \
     brightnessctl \
     playerctl \
     grim \
     slurp \
-    swappy \
     wl-clipboard \
-    cliphist
+    cliphist \
+    rfkill
 print_success "Hyprland ecosystem packages installed"
 echo ""
 
@@ -147,7 +146,6 @@ echo ""
 print_info "Installing fonts..."
 sudo pacman -S --needed --noconfirm \
     ttf-jetbrains-mono-nerd \
-    ttf-fira-code \
     noto-fonts \
     noto-fonts-emoji \
     ttf-font-awesome
@@ -161,20 +159,20 @@ sudo pacman -S --needed --noconfirm \
     fastfetch \
     unzip \
     zip \
-    jq \
-    imagemagick \
     ffmpeg \
     mpv \
-    imv
+    imv \
+    okular
 print_success "Additional utilities installed"
 echo ""
 
-# Install AUR packages
-print_info "Installing AUR packages (swww, grimblast, hyprpicker)..."
-yay -S --needed --noconfirm \
+# Install AUR packages specific to your config
+print_info "Installing AUR packages (swww, grimblast, swaync, matugen)..."
+yay -S --noconfirm --answerclean All --answerdiff None \
     swww \
     grimblast-git \
-    hyprpicker
+    swaync \
+    matugen-bin
 print_success "AUR packages installed"
 echo ""
 
@@ -203,7 +201,7 @@ print_info "Backing up existing configurations..."
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-configs_to_backup=("hypr" "waybar" "wofi" "rofi" "dunst" "kitty" "foot" "alacritty")
+configs_to_backup=("hypr" "waybar" "rofi" "swaync" "kitty")
 for config in "${configs_to_backup[@]}"; do
     if [ -d "$HOME/.config/$config" ]; then
         cp -r "$HOME/.config/$config" "$BACKUP_DIR/"
@@ -220,85 +218,189 @@ cd "$REPO_DIR"
 # Create .config directory if it doesn't exist
 mkdir -p "$HOME/.config"
 
-# Check for different possible directory structures
-if [ -d ".config" ]; then
-    print_info "Copying from .config directory..."
-    cp -r .config/* "$HOME/.config/"
-elif [ -d "config" ]; then
-    print_info "Copying from config directory..."
-    cp -r config/* "$HOME/.config/"
-elif [ -f "install.sh" ]; then
-    print_warning "Repository has its own install.sh script"
-    read -p "Run the repository's install script? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        chmod +x install.sh
-        ./install.sh
-    fi
-else
-    print_info "Copying all configuration folders to ~/.config/..."
-    for dir in */; do
-        if [ "$dir" != ".git/" ] && [ "$dir" != ".github/" ]; then
-            cp -r "$dir" "$HOME/.config/"
-        fi
-    done
+# Copy configuration files based on repository structure
+if [ -d ".config/hypr" ]; then
+    print_info "Copying Hyprland configs..."
+    cp -r .config/hypr "$HOME/.config/"
+elif [ -d "hypr" ]; then
+    cp -r hypr "$HOME/.config/"
 fi
+
+# Copy other configs if they exist
+for config_dir in waybar rofi swaync kitty; do
+    if [ -d ".config/$config_dir" ]; then
+        cp -r ".config/$config_dir" "$HOME/.config/"
+        print_info "Copied $config_dir config"
+    elif [ -d "$config_dir" ]; then
+        cp -r "$config_dir" "$HOME/.config/"
+        print_info "Copied $config_dir config"
+    fi
+done
+
 print_success "Configuration files installed"
 echo ""
 
-# Make scripts executable
-print_info "Making scripts executable..."
-find "$HOME/.config" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
-find "$HOME/.config" -type f -path "*/scripts/*" -exec chmod +x {} \; 2>/dev/null || true
+# Fix incomplete scripts
+print_info "Fixing incomplete scripts..."
+
+# Fix hyprlock.sh
+if [ -f "$HOME/.config/hypr/scripts/hyprlock.sh" ]; then
+    cat > "$HOME/.config/hypr/scripts/hyprlock.sh" << 'EOF'
+#!/bin/bash
+pidof hyprlock || hyprlock
+EOF
+    chmod +x "$HOME/.config/hypr/scripts/hyprlock.sh"
+    print_info "Fixed hyprlock.sh"
+fi
+
+# Fix Wlogout.sh
+if [ -f "$HOME/.config/hypr/scripts/Wlogout.sh" ]; then
+    cat > "$HOME/.config/hypr/scripts/Wlogout.sh" << 'EOF'
+#!/bin/bash
+wlogout
+EOF
+    chmod +x "$HOME/.config/hypr/scripts/Wlogout.sh"
+    print_info "Fixed Wlogout.sh"
+fi
+
+# Fix screenshot.sh
+if [ -f "$HOME/.config/hypr/scripts/screenshot.sh" ]; then
+    cat > "$HOME/.config/hypr/scripts/screenshot.sh" << 'EOF'
+#!/bin/bash
+grimblast --notify copysave area
+EOF
+    chmod +x "$HOME/.config/hypr/scripts/screenshot.sh"
+    print_info "Fixed screenshot.sh"
+fi
+
+# Create Sounds.sh (referenced by volume.sh)
+if [ -f "$HOME/.config/hypr/scripts/volume.sh" ]; then
+    cat > "$HOME/.config/hypr/scripts/Sounds.sh" << 'EOF'
+#!/bin/bash
+# Play volume change sound
+paplay /usr/share/sounds/freedesktop/stereo/audio-volume-change.oga 2>/dev/null || true
+EOF
+    chmod +x "$HOME/.config/hypr/scripts/Sounds.sh"
+    print_info "Created Sounds.sh"
+fi
+
+print_success "Scripts fixed"
+echo ""
+
+# Make all scripts executable
+print_info "Making all scripts executable..."
+find "$HOME/.config/hypr/scripts" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 print_success "Scripts made executable"
 echo ""
 
-# Create common directories
-print_info "Creating common directories..."
-mkdir -p "$HOME/Pictures/Wallpapers"
+# Create required directory structure
+print_info "Creating required directories..."
+mkdir -p "$HOME/Pictures/wallpapers"
 mkdir -p "$HOME/Pictures/Screenshots"
+mkdir -p "$HOME/.config/hypr/configs"
+mkdir -p "$HOME/.config/waybar/configs"
+mkdir -p "$HOME/.config/waybar/style"
+mkdir -p "$HOME/.config/swaync/icons"
+mkdir -p "$HOME/.config/swaync/images"
+mkdir -p "$HOME/.config/rofi"
 mkdir -p "$HOME/.local/bin"
-mkdir -p "$HOME/.local/share"
 print_success "Directories created"
+echo ""
+
+# Fix monitor configuration to auto-detect
+if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
+    print_info "Setting monitor to auto-detect..."
+    sed -i 's/monitor = eDP-1, 1920x1200@90, 0x0, 1/monitor = , preferred, auto, 1/' \
+        "$HOME/.config/hypr/hyprland.conf"
+    print_success "Monitor configuration updated to auto-detect"
+fi
+echo ""
+
+# Organize config files into configs/ subdirectory if using new structure
+if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
+    if grep -q "source = ~/.config/hypr/configs/" "$HOME/.config/hypr/hyprland.conf"; then
+        print_info "Moving modular configs to configs/ subdirectory..."
+        cd "$HOME/.config/hypr"
+        for conf in tags.conf looknfeel.conf UserAnimations.conf windowrules.conf input.conf keybinds.conf; do
+            if [ -f "$conf" ] && [ ! -f "configs/$conf" ]; then
+                mv "$conf" configs/ 2>/dev/null || true
+            fi
+        done
+        print_success "Config files organized"
+    fi
+fi
 echo ""
 
 # Copy wallpapers if they exist in the repo
 if [ -d "$REPO_DIR/wallpapers" ]; then
     print_info "Copying wallpapers..."
-    cp -r "$REPO_DIR/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    cp -r "$REPO_DIR/wallpapers/"* "$HOME/Pictures/wallpapers/" 2>/dev/null || true
     print_success "Wallpapers copied"
 elif [ -d "$REPO_DIR/Wallpapers" ]; then
     print_info "Copying wallpapers..."
-    cp -r "$REPO_DIR/Wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    cp -r "$REPO_DIR/Wallpapers/"* "$HOME/Pictures/wallpapers/" 2>/dev/null || true
     print_success "Wallpapers copied"
+else
+    print_warning "No wallpapers found in repository"
+    print_info "You can add wallpapers to ~/Pictures/wallpapers/ manually"
 fi
 echo ""
 
-# Final message
+# Download a default wallpaper if none exist
+if [ -z "$(ls -A $HOME/Pictures/wallpapers 2>/dev/null)" ]; then
+    print_info "Downloading a default wallpaper..."
+    wget -q -O "$HOME/Pictures/wallpapers/default.jpg" \
+        "https://w.wallhaven.cc/full/pk/wallhaven-pkz35y.jpg" 2>/dev/null || \
+        print_warning "Failed to download wallpaper, please add one manually"
+fi
+echo ""
+
+# Create initial waybar config and style if missing
+if [ ! -f "$HOME/.config/waybar/config" ] && [ -d "$HOME/.config/waybar/configs" ]; then
+    if [ -n "$(ls -A $HOME/.config/waybar/configs 2>/dev/null)" ]; then
+        print_info "Creating waybar config symlink..."
+        first_config=$(ls "$HOME/.config/waybar/configs" | head -n 1)
+        ln -sf "$HOME/.config/waybar/configs/$first_config" "$HOME/.config/waybar/config"
+        print_info "Linked to $first_config"
+    fi
+fi
+
+if [ ! -f "$HOME/.config/waybar/style.css" ] && [ -d "$HOME/.config/waybar/style" ]; then
+    if [ -n "$(ls -A $HOME/.config/waybar/style 2>/dev/null)" ]; then
+        print_info "Creating waybar style symlink..."
+        first_style=$(ls "$HOME/.config/waybar/style"/*.css 2>/dev/null | head -n 1)
+        if [ -n "$first_style" ]; then
+            ln -sf "$first_style" "$HOME/.config/waybar/style.css"
+            print_info "Linked to $(basename $first_style)"
+        fi
+    fi
+fi
+echo ""
+
+# Final instructions
+print_success "============================================"
 print_success "Installation complete!"
+print_success "============================================"
 echo ""
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Next Steps:${NC}"
-echo -e "  1. Reboot your system: ${YELLOW}sudo reboot${NC}"
-echo -e "  2. At SDDM login, select 'Hyprland' from the session menu"
-echo -e "  3. Add wallpapers to ${YELLOW}~/Pictures/Wallpapers${NC}"
-echo -e "  4. Review and customize configs in ${YELLOW}~/.config/hypr${NC}"
-echo -e "  5. Check Hyprland keybindings in ${YELLOW}~/.config/hypr/hyprland.conf${NC}"
+print_info "Next steps:"
+echo "  1. Reboot your system: sudo reboot"
+echo "  2. If you installed SDDM, select Hyprland from the session menu"
+echo "  3. If no display manager, login and run: Hyprland"
 echo ""
-echo -e "${YELLOW}Important Notes:${NC}"
-echo -e "  - Fresh archinstall detected - all dependencies installed"
-echo -e "  - Audio: PipeWire (use ${YELLOW}pavucontrol${NC} for settings)"
-echo -e "  - Network: NetworkManager (use ${YELLOW}nmtui${NC} or system tray)"
-echo -e "  - Bluetooth: blueman applet available in system tray"
-echo -e "  - Screenshots saved to ${YELLOW}~/Pictures/Screenshots${NC}"
-echo -e "  - Logs: ${YELLOW}/tmp/hypr/*/hyprland.log${NC}"
-echo -e "  - Backups: ${YELLOW}$BACKUP_DIR${NC}"
+print_info "Key bindings (from your config):"
+echo "  • SUPER + RETURN      - Open terminal (kitty)"
+echo "  • SUPER + SPACE       - Application launcher (rofi)"
+echo "  • SUPER + Q           - Close window"
+echo "  • SUPER + L           - Lock screen"
+echo "  • SUPER + E           - File manager"
+echo "  • SUPER + ESCAPE      - Power menu"
+echo "  • SUPER + SHIFT + S   - Screenshot (area)"
+echo "  • SUPER + 1-9         - Switch workspaces"
+echo "  • SUPER + CTRL + SPACE - Wallpaper picker"
 echo ""
-echo -e "${BLUE}Common Keybindings (check config for full list):${NC}"
-echo -e "  - Super + Q: Close window"
-echo -e "  - Super + Return: Terminal"
-echo -e "  - Super + D: App launcher"
-echo -e "  - Super + E: File manager"
-echo -e "  - Super + Shift + Q: Exit Hyprland"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_info "Configuration backed up to: $BACKUP_DIR"
+print_info "Main config location: ~/.config/hypr/"
+echo ""
+print_warning "Note: Some applications may need additional configuration"
+print_warning "Check ~/.config/hypr/, ~/.config/waybar/, etc. for customization"
 echo ""

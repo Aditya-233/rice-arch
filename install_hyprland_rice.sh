@@ -36,15 +36,6 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 print_info "Starting Hyprland Rice Installation for Aditya-233/rice-arch-hyprland"
-echo ""
-
-# Prompt user to continue
-read -p "This script will install Hyprland and related packages. Continue? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    print_warning "Installation cancelled"
-    exit 0
-fi
 
 # Update system first
 print_info "Updating system..."

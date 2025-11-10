@@ -158,7 +158,7 @@ echo ""
 print_info "Installing additional utilities..."
 sudo pacman -S --needed --noconfirm \
     btop \
-    neofetch \
+    fastfetch \
     fastfetch \
     unzip \
     zip \

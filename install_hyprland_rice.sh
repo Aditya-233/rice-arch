@@ -125,7 +125,6 @@ print_info "Installing Hyprland ecosystem packages..."
 sudo pacman -S --needed --noconfirm \
     waybar \
     rofi-wayland \
-    wlogout \
     brightnessctl \
     playerctl \
     grim \
@@ -166,7 +165,9 @@ yay -S --noconfirm --answerclean All --answerdiff None \
     swww \
     grimblast-git \
     swaync \
-    matugen-bin
+    matugen-bin \
+    wlogout
+
 print_success "AUR packages installed"
 echo ""
 

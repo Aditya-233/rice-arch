@@ -240,59 +240,6 @@ done
 print_success "Configuration files installed"
 echo ""
 
-# Fix incomplete scripts
-print_info "Fixing incomplete scripts..."
-
-# Fix hyprlock.sh
-if [ -f "$HOME/.config/hypr/scripts/hyprlock.sh" ]; then
-    cat > "$HOME/.config/hypr/scripts/hyprlock.sh" << 'EOF'
-#!/bin/bash
-pidof hyprlock || hyprlock
-EOF
-    chmod +x "$HOME/.config/hypr/scripts/hyprlock.sh"
-    print_info "Fixed hyprlock.sh"
-fi
-
-# Fix Wlogout.sh
-if [ -f "$HOME/.config/hypr/scripts/Wlogout.sh" ]; then
-    cat > "$HOME/.config/hypr/scripts/Wlogout.sh" << 'EOF'
-#!/bin/bash
-wlogout
-EOF
-    chmod +x "$HOME/.config/hypr/scripts/Wlogout.sh"
-    print_info "Fixed Wlogout.sh"
-fi
-
-# Fix screenshot.sh
-if [ -f "$HOME/.config/hypr/scripts/screenshot.sh" ]; then
-    cat > "$HOME/.config/hypr/scripts/screenshot.sh" << 'EOF'
-#!/bin/bash
-grimblast --notify copysave area
-EOF
-    chmod +x "$HOME/.config/hypr/scripts/screenshot.sh"
-    print_info "Fixed screenshot.sh"
-fi
-
-# Create Sounds.sh (referenced by volume.sh)
-if [ -f "$HOME/.config/hypr/scripts/volume.sh" ]; then
-    cat > "$HOME/.config/hypr/scripts/Sounds.sh" << 'EOF'
-#!/bin/bash
-# Play volume change sound
-paplay /usr/share/sounds/freedesktop/stereo/audio-volume-change.oga 2>/dev/null || true
-EOF
-    chmod +x "$HOME/.config/hypr/scripts/Sounds.sh"
-    print_info "Created Sounds.sh"
-fi
-
-print_success "Scripts fixed"
-echo ""
-
-# Make all scripts executable
-print_info "Making all scripts executable..."
-find "$HOME/.config/hypr/scripts" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
-print_success "Scripts made executable"
-echo ""
-
 # Create required directory structure
 print_info "Creating required directories..."
 mkdir -p "$HOME/Pictures/wallpapers"
@@ -305,30 +252,6 @@ mkdir -p "$HOME/.config/swaync/images"
 mkdir -p "$HOME/.config/rofi"
 mkdir -p "$HOME/.local/bin"
 print_success "Directories created"
-echo ""
-
-# Fix monitor configuration to auto-detect
-if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
-    print_info "Setting monitor to auto-detect..."
-    sed -i 's/monitor = eDP-1, 1920x1200@90, 0x0, 1/monitor = , preferred, auto, 1/' \
-        "$HOME/.config/hypr/hyprland.conf"
-    print_success "Monitor configuration updated to auto-detect"
-fi
-echo ""
-
-# Organize config files into configs/ subdirectory if using new structure
-if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
-    if grep -q "source = ~/.config/hypr/configs/" "$HOME/.config/hypr/hyprland.conf"; then
-        print_info "Moving modular configs to configs/ subdirectory..."
-        cd "$HOME/.config/hypr"
-        for conf in tags.conf looknfeel.conf UserAnimations.conf windowrules.conf input.conf keybinds.conf; do
-            if [ -f "$conf" ] && [ ! -f "configs/$conf" ]; then
-                mv "$conf" configs/ 2>/dev/null || true
-            fi
-        done
-        print_success "Config files organized"
-    fi
-fi
 echo ""
 
 # Copy wallpapers if they exist in the repo
@@ -352,28 +275,6 @@ if [ -z "$(ls -A $HOME/Pictures/wallpapers 2>/dev/null)" ]; then
     wget -q -O "$HOME/Pictures/wallpapers/default.jpg" \
         "https://w.wallhaven.cc/full/pk/wallhaven-pkz35y.jpg" 2>/dev/null || \
         print_warning "Failed to download wallpaper, please add one manually"
-fi
-echo ""
-
-# Create initial waybar config and style if missing
-if [ ! -f "$HOME/.config/waybar/config" ] && [ -d "$HOME/.config/waybar/configs" ]; then
-    if [ -n "$(ls -A $HOME/.config/waybar/configs 2>/dev/null)" ]; then
-        print_info "Creating waybar config symlink..."
-        first_config=$(ls "$HOME/.config/waybar/configs" | head -n 1)
-        ln -sf "$HOME/.config/waybar/configs/$first_config" "$HOME/.config/waybar/config"
-        print_info "Linked to $first_config"
-    fi
-fi
-
-if [ ! -f "$HOME/.config/waybar/style.css" ] && [ -d "$HOME/.config/waybar/style" ]; then
-    if [ -n "$(ls -A $HOME/.config/waybar/style 2>/dev/null)" ]; then
-        print_info "Creating waybar style symlink..."
-        first_style=$(ls "$HOME/.config/waybar/style"/*.css 2>/dev/null | head -n 1)
-        if [ -n "$first_style" ]; then
-            ln -sf "$first_style" "$HOME/.config/waybar/style.css"
-            print_info "Linked to $(basename $first_style)"
-        fi
-    fi
 fi
 echo ""
 

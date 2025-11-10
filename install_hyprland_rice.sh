@@ -71,9 +71,6 @@ sudo pacman -S --needed --noconfirm \
 print_success "Hyprland and Wayland core installed"
 echo ""
 
-# Install display manager (optional - user can skip)
-read -p "Install SDDM display manager? (y/n) " -n 1 -r
-echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_info "Installing SDDM display manager..."
     sudo pacman -S --needed --noconfirm sddm

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Hyprland Rice Installation Script for binnewbs/arch-hyprland
-# This script automates the installation on a fresh Arch Linux system
+# Hyprland Rice Installation Script for Aditya-233/rice-arch-hyprland
+# This script automates the installation on a fresh Arch Linux system (archinstall minimal)
 
 set -e  # Exit on error
 
@@ -35,7 +35,7 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-print_info "Starting Hyprland Rice Installation for binnewbs/arch-hyprland"
+print_info "Starting Hyprland Rice Installation for Aditya-233/rice-arch-hyprland"
 echo ""
 
 # Prompt user to continue
@@ -46,38 +46,19 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# Update system
+# Update system first
 print_info "Updating system..."
 sudo pacman -Syu --noconfirm
 print_success "System updated"
 echo ""
 
-# Install essential tools
-print_info "Installing base development tools..."
-sudo pacman -S --needed --noconfirm git base-devel
+# Install essential build tools and git
+print_info "Installing base development tools and git..."
+sudo pacman -S --needed --noconfirm git base-devel wget curl
 print_success "Base tools installed"
 echo ""
 
-# Install Hyprland and core dependencies
-print_info "Installing Hyprland and core dependencies..."
-sudo pacman -S --needed --noconfirm \
-    hyprland \
-    xdg-desktop-portal-hyprland \
-    polkit-kde-agent \
-    qt5-wayland \
-    qt6-wayland \
-    kitty \
-    sddm
-print_success "Hyprland and core dependencies installed"
-echo ""
-
-# Enable SDDM
-print_info "Enabling SDDM display manager..."
-sudo systemctl enable sddm.service
-print_success "SDDM enabled"
-echo ""
-
-# Install yay (AUR helper)
+# Install yay (AUR helper) - needed for AUR packages
 print_info "Installing yay AUR helper..."
 if command -v yay &> /dev/null; then
     print_warning "yay is already installed, skipping..."
@@ -91,46 +72,138 @@ else
 fi
 echo ""
 
-# Install additional packages from official repos
-print_info "Installing additional packages from official repos..."
+# Install Hyprland and core Wayland dependencies
+print_info "Installing Hyprland and core Wayland dependencies..."
+sudo pacman -S --needed --noconfirm \
+    hyprland \
+    xdg-desktop-portal-hyprland \
+    xdg-desktop-portal-gtk \
+    xorg-xwayland \
+    polkit-kde-agent \
+    qt5-wayland \
+    qt6-wayland
+print_success "Hyprland and Wayland core installed"
+echo ""
+
+# Install display manager
+print_info "Installing SDDM display manager..."
+sudo pacman -S --needed --noconfirm sddm
+sudo systemctl enable sddm.service
+print_success "SDDM installed and enabled"
+echo ""
+
+# Install terminal emulators
+print_info "Installing terminal emulators..."
+sudo pacman -S --needed --noconfirm kitty foot alacritty
+print_success "Terminal emulators installed"
+echo ""
+
+# Install audio system (PipeWire)
+print_info "Installing audio system (PipeWire)..."
+sudo pacman -S --needed --noconfirm \
+    pipewire \
+    pipewire-alsa \
+    pipewire-pulse \
+    pipewire-jack \
+    wireplumber \
+    pamixer \
+    pavucontrol
+print_success "Audio system installed"
+echo ""
+
+# Install essential GUI applications and utilities
+print_info "Installing essential applications..."
+sudo pacman -S --needed --noconfirm \
+    firefox \
+    thunar \
+    thunar-archive-plugin \
+    file-roller \
+    networkmanager \
+    network-manager-applet \
+    bluez \
+    bluez-utils \
+    blueman
+print_success "Essential applications installed"
+echo ""
+
+# Enable NetworkManager and Bluetooth
+print_info "Enabling NetworkManager and Bluetooth..."
+sudo systemctl enable NetworkManager.service
+sudo systemctl enable bluetooth.service
+print_success "Services enabled"
+echo ""
+
+# Install Hyprland ecosystem packages
+print_info "Installing Hyprland ecosystem packages..."
 sudo pacman -S --needed --noconfirm \
     waybar \
     wofi \
+    rofi-wayland \
     dunst \
-    pipewire \
-    pipewire-pulse \
-    wireplumber \
+    hyprpaper \
+    swaybg \
     brightnessctl \
-    pamixer \
     playerctl \
     grim \
     slurp \
-    wl-clipboard
-print_success "Additional packages installed"
+    swappy \
+    wl-clipboard \
+    cliphist
+print_success "Hyprland ecosystem packages installed"
+echo ""
+
+# Install fonts
+print_info "Installing fonts..."
+sudo pacman -S --needed --noconfirm \
+    ttf-jetbrains-mono-nerd \
+    ttf-fira-code \
+    noto-fonts \
+    noto-fonts-emoji \
+    ttf-font-awesome
+print_success "Fonts installed"
+echo ""
+
+# Install additional utilities
+print_info "Installing additional utilities..."
+sudo pacman -S --needed --noconfirm \
+    btop \
+    neofetch \
+    fastfetch \
+    unzip \
+    zip \
+    jq \
+    imagemagick \
+    ffmpeg \
+    mpv \
+    imv
+print_success "Additional utilities installed"
 echo ""
 
 # Install AUR packages
-print_info "Installing AUR packages (swww, matugen)..."
-yay -S --needed --noconfirm swww matugen-bin
+print_info "Installing AUR packages (swww, grimblast, hyprpicker)..."
+yay -S --needed --noconfirm \
+    swww \
+    grimblast-git \
+    hyprpicker
 print_success "AUR packages installed"
 echo ""
 
 # Clone the dotfiles repository
-print_info "Cloning binnewbs/arch-hyprland repository..."
-REPO_DIR="$HOME/arch-hyprland"
+print_info "Cloning Aditya-233/rice-arch-hyprland repository..."
+REPO_DIR="$HOME/rice-arch-hyprland"
 if [ -d "$REPO_DIR" ]; then
     print_warning "Repository already exists at $REPO_DIR"
     read -p "Remove and re-clone? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm -rf "$REPO_DIR"
-        git clone https://github.com/binnewbs/arch-hyprland.git "$REPO_DIR"
+        git clone https://github.com/Aditya-233/rice-arch-hyprland.git "$REPO_DIR"
         print_success "Repository cloned"
     else
         print_info "Using existing repository"
     fi
 else
-    git clone https://github.com/binnewbs/arch-hyprland.git "$REPO_DIR"
+    git clone https://github.com/Aditya-233/rice-arch-hyprland.git "$REPO_DIR"
     print_success "Repository cloned"
 fi
 echo ""
@@ -140,7 +213,7 @@ print_info "Backing up existing configurations..."
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-configs_to_backup=("hypr" "waybar" "wofi" "dunst" "kitty")
+configs_to_backup=("hypr" "waybar" "wofi" "rofi" "dunst" "kitty" "foot" "alacritty")
 for config in "${configs_to_backup[@]}"; do
     if [ -d "$HOME/.config/$config" ]; then
         cp -r "$HOME/.config/$config" "$BACKUP_DIR/"
@@ -154,37 +227,61 @@ echo ""
 print_info "Installing dotfiles..."
 cd "$REPO_DIR"
 
-# Check if .config directory exists in the repo
+# Create .config directory if it doesn't exist
+mkdir -p "$HOME/.config"
+
+# Check for different possible directory structures
 if [ -d ".config" ]; then
-    print_info "Copying configuration files..."
-    mkdir -p "$HOME/.config"
+    print_info "Copying from .config directory..."
     cp -r .config/* "$HOME/.config/"
-    print_success "Configuration files copied"
 elif [ -d "config" ]; then
-    print_info "Copying configuration files from 'config' directory..."
-    mkdir -p "$HOME/.config"
+    print_info "Copying from config directory..."
     cp -r config/* "$HOME/.config/"
-    print_success "Configuration files copied"
+elif [ -f "install.sh" ]; then
+    print_warning "Repository has its own install.sh script"
+    read -p "Run the repository's install script? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        chmod +x install.sh
+        ./install.sh
+    fi
 else
-    print_warning "No .config or config directory found in repository"
-    print_info "Please manually copy the configuration files"
+    print_info "Copying all configuration folders to ~/.config/..."
+    for dir in */; do
+        if [ "$dir" != ".git/" ] && [ "$dir" != ".github/" ]; then
+            cp -r "$dir" "$HOME/.config/"
+        fi
+    done
 fi
+print_success "Configuration files installed"
 echo ""
 
 # Make scripts executable
 print_info "Making scripts executable..."
 find "$HOME/.config" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+find "$HOME/.config" -type f -path "*/scripts/*" -exec chmod +x {} \; 2>/dev/null || true
 print_success "Scripts made executable"
 echo ""
 
-# Additional setup
-print_info "Performing additional setup..."
-
 # Create common directories
+print_info "Creating common directories..."
 mkdir -p "$HOME/Pictures/Wallpapers"
+mkdir -p "$HOME/Pictures/Screenshots"
 mkdir -p "$HOME/.local/bin"
+mkdir -p "$HOME/.local/share"
+print_success "Directories created"
+echo ""
 
-print_success "Additional setup complete"
+# Copy wallpapers if they exist in the repo
+if [ -d "$REPO_DIR/wallpapers" ]; then
+    print_info "Copying wallpapers..."
+    cp -r "$REPO_DIR/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    print_success "Wallpapers copied"
+elif [ -d "$REPO_DIR/Wallpapers" ]; then
+    print_info "Copying wallpapers..."
+    cp -r "$REPO_DIR/Wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    print_success "Wallpapers copied"
+fi
 echo ""
 
 # Final message
@@ -193,15 +290,25 @@ echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}Next Steps:${NC}"
 echo -e "  1. Reboot your system: ${YELLOW}sudo reboot${NC}"
-echo -e "  2. At login, select 'Hyprland' from the session menu"
-echo -e "  3. Place wallpapers in ${YELLOW}~/Pictures/Wallpapers${NC}"
-echo -e "  4. Review configs in ${YELLOW}~/.config/hypr${NC}"
-echo -e "  5. Check logs if issues occur: ${YELLOW}/tmp/hypr/*/hyprland.log${NC}"
+echo -e "  2. At SDDM login, select 'Hyprland' from the session menu"
+echo -e "  3. Add wallpapers to ${YELLOW}~/Pictures/Wallpapers${NC}"
+echo -e "  4. Review and customize configs in ${YELLOW}~/.config/hypr${NC}"
+echo -e "  5. Check Hyprland keybindings in ${YELLOW}~/.config/hypr/hyprland.conf${NC}"
 echo ""
-echo -e "${YELLOW}Notes:${NC}"
-echo -e "  - This rice uses Matugen for color schemes"
-echo -e "  - Wallpaper backend is swww"
-echo -e "  - Some scripts may need tweaking for your system"
-echo -e "  - Backups saved to: ${YELLOW}$BACKUP_DIR${NC}"
+echo -e "${YELLOW}Important Notes:${NC}"
+echo -e "  - Fresh archinstall detected - all dependencies installed"
+echo -e "  - Audio: PipeWire (use ${YELLOW}pavucontrol${NC} for settings)"
+echo -e "  - Network: NetworkManager (use ${YELLOW}nmtui${NC} or system tray)"
+echo -e "  - Bluetooth: blueman applet available in system tray"
+echo -e "  - Screenshots saved to ${YELLOW}~/Pictures/Screenshots${NC}"
+echo -e "  - Logs: ${YELLOW}/tmp/hypr/*/hyprland.log${NC}"
+echo -e "  - Backups: ${YELLOW}$BACKUP_DIR${NC}"
+echo ""
+echo -e "${BLUE}Common Keybindings (check config for full list):${NC}"
+echo -e "  - Super + Q: Close window"
+echo -e "  - Super + Return: Terminal"
+echo -e "  - Super + D: App launcher"
+echo -e "  - Super + E: File manager"
+echo -e "  - Super + Shift + Q: Exit Hyprland"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""

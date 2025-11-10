@@ -159,7 +159,6 @@ print_info "Installing additional utilities..."
 sudo pacman -S --needed --noconfirm \
     btop \
     fastfetch \
-    fastfetch \
     unzip \
     zip \
     jq \

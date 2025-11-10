@@ -71,14 +71,11 @@ sudo pacman -S --needed --noconfirm \
 print_success "Hyprland and Wayland core installed"
 echo ""
 
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_info "Installing SDDM display manager..."
-    sudo pacman -S --needed --noconfirm sddm
-    sudo systemctl enable sddm.service
-    print_success "SDDM installed and enabled"
-else
-    print_info "Skipping SDDM installation (you can start Hyprland manually with 'Hyprland' command)"
-fi
+print_info "Installing SDDM display manager..."
+sudo pacman -S --needed --noconfirm sddm
+sudo systemctl enable sddm.service
+print_success "SDDM installed and enabled"
+
 echo ""
 
 # Install terminal emulators
